@@ -103,7 +103,7 @@ int main(int argc, char* argv[])
         return EXIT_SUCCESS;
     }
 
-    const char* inmidi = argv[1];
+    const char* infile = argv[1];
     const char* outwav = argv[2];
 
     Koriborosu kori;
@@ -129,12 +129,45 @@ int main(int argc, char* argv[])
     hdesc.dispatcher = dispatcher;
 
     const NativePluginDescriptor* const pdesc = carla_get_native_rack_plugin();
+
+    if (pdesc == NULL)
+    {
+        fprintf(stderr, "Failed to load Carla-Rack plugin\n");
+        return EXIT_FAILURE;
+    }
+
     const NativePluginHandle phandle = pdesc->instantiate(&hdesc);
+
+    if (phandle == NULL)
+    {
+        fprintf(stderr, "Failed to instantiate Carla-Rack plugin\n");
+        return EXIT_FAILURE;
+    }
+
     pdesc->activate(&hdesc);
+
+    if (phandle == NULL)
+    {
+        fprintf(stderr, "Failed to activate Carla-Rack plugin\n");
+        pdesc->cleanup(phandle);
+        return EXIT_FAILURE;
+    }
+
+    int ret = EXIT_FAILURE;
 
     const CarlaHostHandle hhandle = carla_create_native_plugin_host_handle(pdesc, phandle);
 
-    carla_load_file(hhandle, inmidi);
+    if (hhandle == NULL)
+    {
+        fprintf(stderr, "Failed to create Carla-Rack host handle\n");
+        goto deactivate;
+    }
+
+    if (! carla_load_file(hhandle, infile))
+    {
+        fprintf(stderr, "Failed to load input file, error was: %s\n", carla_get_last_error(hhandle));
+        goto deactivate;
+    }
 
     // TODO read from audio/midi plugin
     uint32_t file_frames = 100 * opts_sample_rate;
@@ -142,7 +175,7 @@ int main(int argc, char* argv[])
     for (int i = 3; i < argc; ++i)
     {
         if (! carla_add_plugin(hhandle, BINARY_NATIVE, PLUGIN_LV2, "", "", argv[i], 0, NULL, 0x0))
-            fprintf(stderr, "Failed to load plugin, error was: %s\n", carla_get_last_error(hhandle));
+            fprintf(stderr, "Failed to load plugin %s, error was: %s\n", argv[i], carla_get_last_error(hhandle));
     }
 
     SF_INFO sf_fmt = {
@@ -180,12 +213,16 @@ int main(int argc, char* argv[])
         sf_writef_float(file, bufI, opts_buffer_size);
     }
 
+    ret = EXIT_SUCCESS;
+
     free(bufN);
     free(bufL);
     free(bufR);
     sf_close(file);
+
+deactivate:
     pdesc->deactivate(phandle);
     pdesc->cleanup(phandle);
     carla_host_handle_free(hhandle);
-    return EXIT_SUCCESS;
+    return ret;
 }
