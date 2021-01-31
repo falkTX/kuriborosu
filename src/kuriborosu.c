@@ -84,22 +84,22 @@ int main(int argc, char* argv[])
     uint32_t opts_buffer_size = 1024;
     uint32_t opts_sample_rate = 48000;
 
-    if (argc < 4 || strcmp(argv[1], "--help") == 0)
-    {
-        printf("Usage: koriborosu [INFILE|NUMSECONDS] OUTFILE PLUGIN1 PLUGIN2... etc\n"
-                "Where the first argument can be a filename for input file, or number of seconds to render (useful for self-generators).\n\n"
-                "  --help       Display this help and exit\n"
-                "  --version    Display version information and exit\n");
-        return EXIT_SUCCESS;
-    }
-
-    if (strcmp(argv[1], "--version") == 0)
+    if (argc >= 2 && strcmp(argv[1], "--version") == 0)
     {
         printf("koriborosu v0.0.0, using Carla v" CARLA_VERSION_STRING "\n"
                "Copyright 2021 Filipe Coelho <falktx@falktx.com>\n"
                "License: ???\n"
                "This is free software: you are free to change and redistribute it.\n"
                "There is NO WARRANTY, to the extent permitted by law.\n");
+        return EXIT_SUCCESS;
+    }
+
+    if (argc < 4 || strcmp(argv[1], "--help") == 0)
+    {
+        printf("Usage: koriborosu [INFILE|NUMSECONDS] OUTFILE PLUGIN1 PLUGIN2... etc\n"
+                "Where the first argument can be a filename for input file, or number of seconds to render (useful for self-generators).\n\n"
+                "  --help       Display this help and exit\n"
+                "  --version    Display version information and exit\n");
         return EXIT_SUCCESS;
     }
 
