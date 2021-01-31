@@ -23,12 +23,10 @@ FILES = \
 TARGET_DIR = ../bin
 BUILD_DIR = ../build/$(NAME)
 
-# BASE_FLAGS += -I.
 BASE_FLAGS += $(shell pkg-config --cflags carla-host-plugin sndfile)
 LINK_FLAGS += $(shell pkg-config --libs carla-host-plugin sndfile)
 
-# BUILD_C_FLAGS   += -I.
-# BUILD_CXX_FLAGS += -I.
+BASE_FLAGS += -Wno-unused-parameter
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Set files to build

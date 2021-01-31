@@ -163,14 +163,34 @@ int main(int argc, char* argv[])
         goto deactivate;
     }
 
-    if (! carla_load_file(hhandle, infile))
-    {
-        fprintf(stderr, "Failed to load input file, error was: %s\n", carla_get_last_error(hhandle));
-        goto deactivate;
-    }
-
     // TODO read from audio/midi plugin
     uint32_t file_frames = 100 * opts_sample_rate;
+
+    // Check if input file argument is actually seconds
+    // FIXME some isalpha() check??
+    if (strchr(infile, '.') == NULL && strchr(infile, '/') == NULL)
+    {
+        const int seconds = atoi(infile);
+
+        if (seconds <= 0 || seconds > 60*60)
+        {
+            fprintf(stderr, "Invalid number of seconds %i\n", seconds);
+            goto deactivate;
+        }
+
+        file_frames = (uint32_t)seconds * opts_sample_rate;
+    }
+    else
+    {
+        if (! carla_load_file(hhandle, infile))
+        {
+            fprintf(stderr, "Failed to load input file, error was: %s\n", carla_get_last_error(hhandle));
+            goto deactivate;
+        }
+
+        // TODO read from audio/midi plugin
+        file_frames = 100 * opts_sample_rate;
+    }
 
     for (int i = 3; i < argc; ++i)
     {
