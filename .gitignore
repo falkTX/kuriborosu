@@ -1,0 +1,6 @@
+/bin/
+/build/
+
+*.mid
+*.midi
+*.wav
