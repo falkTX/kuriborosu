@@ -78,16 +78,33 @@ static intptr_t dispatcher(NativeHostHandle handle,
 
 #undef koriborosu
 
-// TODO argument handling
-int main()
+int main(int argc, char* argv[])
 {
-    // TODO read from CLI args
+    // TODO use more advanced opts
     uint32_t opts_buffer_size = 1024;
     uint32_t opts_sample_rate = 48000;
-    const char* inmidi = "/home/falktx/Personal/Muzyks/Projects/MIDI-Classic/clairdelune.mid";
-    const char* outwav = "/Shared/Personal/FOSS/GIT/falkTX/kuriborosu/testfile.wav";
-    const char* pluginuri1 = "http://drobilla.net/plugins/mda/Piano";
-    const char* pluginuri2 = "https://github.com/michaelwillis/dragonfly-reverb";
+
+    if (argc < 4 || strcmp(argv[1], "--help") == 0)
+    {
+        printf("Usage: koriborosu [INFILE|NUMSECONDS] OUTFILE PLUGIN1 PLUGIN2... etc\n"
+                "Where the first argument can be a filename for input file, or number of seconds to render (useful for self-generators).\n\n"
+                "  --help       Display this help and exit\n"
+                "  --version    Display version information and exit\n");
+        return EXIT_SUCCESS;
+    }
+
+    if (strcmp(argv[1], "--version") == 0)
+    {
+        printf("koriborosu v0.0.0, using Carla v" CARLA_VERSION_STRING "\n"
+               "Copyright 2021 Filipe Coelho <falktx@falktx.com>\n"
+               "License: ???\n"
+               "This is free software: you are free to change and redistribute it.\n"
+               "There is NO WARRANTY, to the extent permitted by law.\n");
+        return EXIT_SUCCESS;
+    }
+
+    const char* inmidi = argv[1];
+    const char* outwav = argv[2];
 
     Koriborosu kori;
     memset(&kori, 0, sizeof(kori));
@@ -118,11 +135,15 @@ int main()
     const CarlaHostHandle hhandle = carla_create_native_plugin_host_handle(pdesc, phandle);
 
     carla_load_file(hhandle, inmidi);
-    carla_add_plugin(hhandle, BINARY_NATIVE, PLUGIN_LV2, "", "", pluginuri1, 0, NULL, 0x0);
-    carla_add_plugin(hhandle, BINARY_NATIVE, PLUGIN_LV2, "", "", pluginuri2, 0, NULL, 0x0);
 
     // TODO read from audio/midi plugin
     uint32_t file_frames = 100 * opts_sample_rate;
+
+    for (int i = 3; i < argc; ++i)
+    {
+        if (! carla_add_plugin(hhandle, BINARY_NATIVE, PLUGIN_LV2, "", "", argv[i], 0, NULL, 0x0))
+            fprintf(stderr, "Failed to load plugin, error was: %s\n", carla_get_last_error(hhandle));
+    }
 
     SF_INFO sf_fmt = {
         .frames = 0,
