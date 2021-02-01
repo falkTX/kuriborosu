@@ -13,6 +13,7 @@ typedef struct {
     uint32_t buffer_size;
     double sample_rate;
     NativeTimeInfo time;
+    bool plugin_needs_idle;
 } Koriborosu;
 
 #define koriborosu ((Koriborosu*)handle)
@@ -73,10 +74,30 @@ static const char* ui_save_file(NativeHostHandle handle, bool isDir, const char*
 static intptr_t dispatcher(NativeHostHandle handle,
                            NativeHostDispatcherOpcode opcode, int32_t index, intptr_t value, void* ptr, float opt)
 {
+    switch (opcode)
+    {
+    case NATIVE_HOST_OPCODE_REQUEST_IDLE:
+        koriborosu->plugin_needs_idle = true;
+        return 1;
+    default:
+        break;
+    }
+
     return 0;
 }
 
 #undef koriborosu
+
+static double get_file_length_from_plugin(const CarlaHostHandle handle)
+{
+    if (strcmp(carla_get_real_plugin_name(handle, 0), "Audio File") == 0)
+        return carla_get_current_parameter_value(handle, 0, 5 /* kParameterInfoLength */);
+
+    // TODO read from midi plugin
+
+    // default value
+    return 60.0;
+}
 
 int main(int argc, char* argv[])
 {
@@ -163,8 +184,7 @@ int main(int argc, char* argv[])
         goto deactivate;
     }
 
-    // TODO read from audio/midi plugin
-    uint32_t file_frames = 100 * opts_sample_rate;
+    uint32_t file_frames;
 
     // Check if input file argument is actually seconds
     // FIXME some isalpha() check??
@@ -188,8 +208,13 @@ int main(int argc, char* argv[])
             goto deactivate;
         }
 
-        // TODO read from audio/midi plugin
-        file_frames = 100 * opts_sample_rate;
+#if 0
+        // TESTING reduce overall volume of audio file to prevent clipping
+        if (strcmp(carla_get_real_plugin_name(hhandle, 0), "Audio File") == 0)
+            carla_set_volume(hhandle, 0, 0.5f);
+#endif
+
+        file_frames = (uint32_t)(get_file_length_from_plugin(hhandle) * opts_sample_rate + 0.5);
     }
 
     for (int i = 3; i < argc; ++i)
@@ -208,10 +233,18 @@ int main(int argc, char* argv[])
     };
     SNDFILE* const file = sf_open(outwav, SFM_WRITE, &sf_fmt);
 
+    // TODO check file NULL or error
+
+    // Turn on clipping and normalization of floats (-1.0 - 1.0)
+    sf_command(file, SFC_SET_CLIPPING, NULL, SF_TRUE);
+    sf_command(file, SFC_SET_NORM_FLOAT, NULL, SF_TRUE);
+
     float* bufN = calloc(1, sizeof(float)*opts_buffer_size);
     float* bufL = malloc(sizeof(float)*opts_buffer_size);
     float* bufR = malloc(sizeof(float)*opts_buffer_size);
     float* bufI = malloc(sizeof(float)*opts_buffer_size*2);
+
+    // TODO check memory fail
 
     float* inbuf[2] = { bufN, bufN };
     float* outbuf[2] = { bufL, bufR };
@@ -231,6 +264,12 @@ int main(int argc, char* argv[])
         }
 
         sf_writef_float(file, bufI, opts_buffer_size);
+
+        if (kori.plugin_needs_idle)
+        {
+            kori.plugin_needs_idle = false;
+            pdesc->dispatcher(phandle, NATIVE_PLUGIN_OPCODE_IDLE, 0, 0, NULL, 0.0f);
+        }
     }
 
     ret = EXIT_SUCCESS;
@@ -238,6 +277,7 @@ int main(int argc, char* argv[])
     free(bufN);
     free(bufL);
     free(bufR);
+    free(bufI);
     sf_close(file);
 
 deactivate:
