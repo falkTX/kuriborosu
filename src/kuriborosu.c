@@ -239,14 +239,14 @@ int main(int argc, char* argv[])
     sf_command(file, SFC_SET_CLIPPING, NULL, SF_TRUE);
     sf_command(file, SFC_SET_NORM_FLOAT, NULL, SF_TRUE);
 
-    float* bufN = calloc(1, sizeof(float)*opts_buffer_size);
+    float* bufN = malloc(sizeof(float)*opts_buffer_size*2);
     float* bufL = malloc(sizeof(float)*opts_buffer_size);
     float* bufR = malloc(sizeof(float)*opts_buffer_size);
-    float* bufI = malloc(sizeof(float)*opts_buffer_size*2);
 
-    // TODO check memory fail
+    if (bufN == NULL || bufL == NULL || bufR == NULL)
+        goto free;
 
-    float* inbuf[2] = { bufN, bufN };
+    float* inbuf[2] = { bufN, bufN + opts_buffer_size };
     float* outbuf[2] = { bufL, bufR };
 
     kori.time.playing = true;
@@ -254,16 +254,17 @@ int main(int argc, char* argv[])
     for (uint32_t i = 0; i < file_frames; i += opts_buffer_size)
     {
         kori.time.frame = i;
+        memset(bufN, 0, sizeof(float)*opts_buffer_size*2);
         pdesc->process(phandle, inbuf, outbuf, opts_buffer_size, NULL, 0);
 
         // interleave
-        for (uint32_t j = 0, k = 0; j < opts_buffer_size*2; j += 2, ++k)
+        for (uint32_t j = 0, k = 0; k < opts_buffer_size; j += 2, ++k)
         {
-            bufI[j+0] = bufL[k];
-            bufI[j+1] = bufR[k];
+            bufN[j+0] = bufL[k];
+            bufN[j+1] = bufR[k];
         }
 
-        sf_writef_float(file, bufI, opts_buffer_size);
+        sf_writef_float(file, bufN, opts_buffer_size);
 
         if (kori.plugin_needs_idle)
         {
@@ -274,10 +275,10 @@ int main(int argc, char* argv[])
 
     ret = EXIT_SUCCESS;
 
+free:
     free(bufN);
     free(bufL);
     free(bufR);
-    free(bufI);
     sf_close(file);
 
 deactivate:
