@@ -99,8 +99,6 @@ static double get_file_length_from_plugin(const CarlaHostHandle handle)
         // NOTE WIP, parameter index can change
         return carla_get_current_parameter_value(handle, 0, 0 /* kParameterInfoLength */);
 
-    // TODO read from midi plugin
-
     // default value
     return 60.0;
 }
@@ -237,7 +235,6 @@ int main(int argc, char* argv[])
     for (int i = 3; i < argc; ++i)
     {
         const char* const plugin_arg = argv[i];
-
 
         // check if file
         if (plugin_arg[0] == '.' || plugin_arg[0] == '/')
