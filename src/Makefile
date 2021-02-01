@@ -21,7 +21,7 @@ FILES = \
 # Basic setup
 
 TARGET_DIR = ../bin
-BUILD_DIR = ../build/$(NAME)
+BUILD_DIR = ../build
 
 BASE_FLAGS += $(shell pkg-config --cflags carla-host-plugin sndfile)
 LINK_FLAGS += $(shell pkg-config --libs carla-host-plugin sndfile)
@@ -61,7 +61,7 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 	$(SILENT)$(CXX) $< $(BUILD_CXX_FLAGS) -c -o $@
 
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) $(TARGET)
 
 # ---------------------------------------------------------------------------------------------------------------------
 

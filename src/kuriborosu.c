@@ -1,5 +1,8 @@
 // TODO license header here
 
+#include <float.h>
+#include <math.h>
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -92,6 +95,9 @@ static double get_file_length_from_plugin(const CarlaHostHandle handle)
 {
     if (strcmp(carla_get_real_plugin_name(handle, 0), "Audio File") == 0)
         return carla_get_current_parameter_value(handle, 0, 5 /* kParameterInfoLength */);
+    else if (strcmp(carla_get_real_plugin_name(handle, 0), "MIDI File") == 0)
+        // NOTE WIP, parameter index can change
+        return carla_get_current_parameter_value(handle, 0, 0 /* kParameterInfoLength */);
 
     // TODO read from midi plugin
 
@@ -188,7 +194,28 @@ int main(int argc, char* argv[])
 
     // Check if input file argument is actually seconds
     // FIXME some isalpha() check??
-    if (strchr(infile, '.') == NULL && strchr(infile, '/') == NULL)
+    const bool isfile = strchr(infile, '.') != NULL || strchr(infile, '/') != NULL;
+    if (isfile)
+    {
+        if (! carla_load_file(hhandle, infile))
+        {
+            fprintf(stderr, "Failed to load input file, error was: %s\n", carla_get_last_error(hhandle));
+            goto deactivate;
+        }
+
+        if (strcmp(carla_get_real_plugin_name(hhandle, 0), "Audio File") == 0)
+        {
+            // Disable looping
+            carla_set_parameter_value(hhandle, 0, 0 /* kParameterLooping */, 0.0f);
+#if 0
+            // TESTING reduce overall volume of audio file to prevent clipping
+            carla_set_volume(hhandle, 0, 0.5f);
+#endif
+        }
+
+        file_frames = (uint32_t)(get_file_length_from_plugin(hhandle) * opts_sample_rate + 0.5);
+    }
+    else
     {
         const int seconds = atoi(infile);
 
@@ -200,21 +227,11 @@ int main(int argc, char* argv[])
 
         file_frames = (uint32_t)seconds * opts_sample_rate;
     }
-    else
+
+    if (file_frames > 60*60*opts_sample_rate)
     {
-        if (! carla_load_file(hhandle, infile))
-        {
-            fprintf(stderr, "Failed to load input file, error was: %s\n", carla_get_last_error(hhandle));
-            goto deactivate;
-        }
-
-#if 0
-        // TESTING reduce overall volume of audio file to prevent clipping
-        if (strcmp(carla_get_real_plugin_name(hhandle, 0), "Audio File") == 0)
-            carla_set_volume(hhandle, 0, 0.5f);
-#endif
-
-        file_frames = (uint32_t)(get_file_length_from_plugin(hhandle) * opts_sample_rate + 0.5);
+        fprintf(stderr, "Output file unexpectedly big, bailing out\n");
+        goto deactivate;
     }
 
     for (int i = 3; i < argc; ++i)
@@ -244,7 +261,10 @@ int main(int argc, char* argv[])
     float* bufR = malloc(sizeof(float)*opts_buffer_size);
 
     if (bufN == NULL || bufL == NULL || bufR == NULL)
+    {
+        fprintf(stderr, "Out of memory\n");
         goto free;
+    }
 
     float* inbuf[2] = { bufN, bufN + opts_buffer_size };
     float* outbuf[2] = { bufL, bufR };
@@ -270,6 +290,37 @@ int main(int argc, char* argv[])
         {
             kori.plugin_needs_idle = false;
             pdesc->dispatcher(phandle, NATIVE_PLUGIN_OPCODE_IDLE, 0, 0, NULL, 0.0f);
+        }
+    }
+
+    if (isfile)
+    {
+        // keep going a bit until silence, maximum 5 seconds
+        const uint32_t until_silence = 5 * opts_sample_rate;
+        kori.time.playing = false;
+
+        for (uint32_t i = 0; i < until_silence; i += opts_buffer_size)
+        {
+            memset(bufN, 0, sizeof(float)*opts_buffer_size*2);
+            pdesc->process(phandle, inbuf, outbuf, opts_buffer_size, NULL, 0);
+
+            // interleave
+            for (uint32_t j = 0, k = 0; k < opts_buffer_size; j += 2, ++k)
+            {
+                bufN[j+0] = bufL[k];
+                bufN[j+1] = bufR[k];
+            }
+
+            sf_writef_float(file, bufN, opts_buffer_size);
+
+            if (kori.plugin_needs_idle)
+            {
+                kori.plugin_needs_idle = false;
+                pdesc->dispatcher(phandle, NATIVE_PLUGIN_OPCODE_IDLE, 0, 0, NULL, 0.0f);
+            }
+
+            if (fabsf(bufN[opts_buffer_size-1]) < __FLT_EPSILON__)
+                break;
         }
     }
 
