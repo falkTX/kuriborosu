@@ -236,8 +236,20 @@ int main(int argc, char* argv[])
 
     for (int i = 3; i < argc; ++i)
     {
-        if (! carla_add_plugin(hhandle, BINARY_NATIVE, PLUGIN_LV2, "", "", argv[i], 0, NULL, 0x0))
-            fprintf(stderr, "Failed to load plugin %s, error was: %s\n", argv[i], carla_get_last_error(hhandle));
+        const char* const plugin_arg = argv[i];
+
+
+        // check if file
+        if (plugin_arg[0] == '.' || plugin_arg[0] == '/')
+        {
+            if (! carla_load_file(hhandle, plugin_arg))
+                fprintf(stderr, "Failed to load file %s, error was: %s\n", plugin_arg, carla_get_last_error(hhandle));
+        }
+        else
+        {
+            if (! carla_add_plugin(hhandle, BINARY_NATIVE, PLUGIN_LV2, "", "", plugin_arg, 0, NULL, 0x0))
+                fprintf(stderr, "Failed to load plugin %s, error was: %s\n", plugin_arg, carla_get_last_error(hhandle));
+        }
     }
 
     SF_INFO sf_fmt = {
