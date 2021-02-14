@@ -14,3 +14,5 @@ This can be used to:
 * Simple render of a MIDI file to WAV via softsynth
 * Render a MIDI file, with added MIDI filters on top, then synths, then some FX because why not
 * Apply some FX on an audio file
+* Transcode ogg, flac or mp3 to wav
+* Perform automated plugin testing (1 signal generator plugin can feed into an FX, for example)
