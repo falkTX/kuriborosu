@@ -6,17 +6,6 @@
 
 include ../Makefile.base.mk
 
-# --------------------------------------------------------------
-# Project name, used for binaries
-
-NAME = kuriborosu
-
-# --------------------------------------------------------------
-# Files to build
-
-FILES = \
-	kuriborosu.c
-
 # ---------------------------------------------------------------------------------------------------------------------
 # Basic setup
 
@@ -31,23 +20,29 @@ BASE_FLAGS += -Wno-unused-parameter
 # ---------------------------------------------------------------------------------------------------------------------
 # Set files to build
 
-OBJS = $(FILES:%=$(BUILD_DIR)/%.o)
+FILES = host.c kuriborosu.c kuribu.c
+OBJS  = $(FILES:%=$(BUILD_DIR)/%.o)
 
 # ---------------------------------------------------------------------------------------------------------------------
-# Default build target
+# Default build targets
 
-TARGET = $(TARGET_DIR)/$(NAME)
+TARGETS = $(TARGET_DIR)/kuriborosu $(TARGET_DIR)/kuribu
 
 all: build
 
-build: $(TARGET)
+build: $(TARGETS)
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Build commands
 
-$(TARGET): $(OBJS)
+$(TARGET_DIR)/kuriborosu: $(BUILD_DIR)/kuriborosu.c.o $(BUILD_DIR)/host.c.o
 	-@mkdir -p $(shell dirname $@)
-	@echo "Linking $(NAME)"
+	@echo "Linking kuriborosu"
+	$(SILENT)$(CXX) $^ $(LINK_FLAGS) -o $@
+
+$(TARGET_DIR)/kuribu: $(BUILD_DIR)/kuribu.c.o $(BUILD_DIR)/host.c.o
+	-@mkdir -p $(shell dirname $@)
+	@echo "Linking kuribu"
 	$(SILENT)$(CXX) $^ $(LINK_FLAGS) -o $@
 
 $(BUILD_DIR)/%.c.o: %.c

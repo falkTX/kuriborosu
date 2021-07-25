@@ -2,40 +2,56 @@
 
 #include "host.h"
 
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+static void print_help()
+{
+    printf("Usage: kuribu [INFILE|NUMSECONDS] OUTFILE PLUGIN1 PLUGIN2... etc\n"
+           "Where the first argument can be a filename for input file, or number of seconds to render (useful for self-generators).\n\n"
+           "  --help       Display this help and exit\n"
+           "  --version    Display version information and exit\n");
+}
+
+static void print_version()
+{
+    printf("kuribu v0.0.0, using Carla v" CARLA_VERSION_STRING "\n"
+           "Copyright 2021 Filipe Coelho <falktx@falktx.com>\n"
+           "License: ???\n"
+           "This is free software: you are free to change and redistribute it.\n"
+           "There is NO WARRANTY, to the extent permitted by law.\n");
+}
+
 int main(int argc, char* argv[])
 {
-    // TODO use more advanced opts
-    uint32_t opts_buffer_size = 1024;
-    uint32_t opts_sample_rate = 48000;
-
-    if (argc >= 2 && strcmp(argv[1], "--version") == 0)
+    if (argc < 4)
     {
-        printf("kuriborosu v0.0.0, using Carla v" CARLA_VERSION_STRING "\n"
-               "Copyright 2021 Filipe Coelho <falktx@falktx.com>\n"
-               "License: ???\n"
-               "This is free software: you are free to change and redistribute it.\n"
-               "There is NO WARRANTY, to the extent permitted by law.\n");
-        return EXIT_SUCCESS;
+        print_help();
+        return EXIT_FAILURE;
     }
 
-    if (argc < 4 || strcmp(argv[1], "--help") == 0)
+    for (int i = 1; i < argc; ++i)
     {
-        printf("Usage: kuriborosu [INFILE|NUMSECONDS] OUTFILE PLUGIN1 PLUGIN2... etc\n"
-                "Where the first argument can be a filename for input file, or number of seconds to render (useful for self-generators).\n\n"
-                "  --help       Display this help and exit\n"
-                "  --version    Display version information and exit\n");
-        return EXIT_SUCCESS;
+        if (strcmp(argv[i], "--help") == 0)
+        {
+            print_version();
+            return EXIT_SUCCESS;
+        }
+        if (strcmp(argv[i], "--version") == 0)
+        {
+            print_version();
+            return EXIT_SUCCESS;
+        }
     }
 
     const char* infile = argv[1];
     const char* outwav = argv[2];
 
-    Kuriborosu* const kuri = kuriborosu_host_init(opts_buffer_size, opts_sample_rate);
+    const uint32_t buffer_size = 1024;
+    const uint32_t sample_rate = 48000;
+
+    Kuriborosu* const kuri = kuriborosu_host_init(buffer_size, sample_rate);
 
     if (kuri == NULL)
         return EXIT_FAILURE;
@@ -50,7 +66,7 @@ int main(int argc, char* argv[])
         if (! kuriborosu_host_load_file(kuri, infile))
             goto error;
 
-        file_frames = (uint32_t)(get_file_length_from_last_plugin(kuri) * opts_sample_rate + 0.5);
+        file_frames = (uint32_t)(get_file_length_from_last_plugin(kuri) * sample_rate + 0.5);
     }
     else
     {
@@ -62,10 +78,10 @@ int main(int argc, char* argv[])
             goto error;
         }
 
-        file_frames = (uint32_t)seconds * opts_sample_rate;
+        file_frames = (uint32_t)seconds * sample_rate;
     }
 
-    if (file_frames > 60*60*opts_sample_rate)
+    if (file_frames > 60*60*sample_rate)
     {
         fprintf(stderr, "Output file unexpectedly big, bailing out\n");
         goto error;
