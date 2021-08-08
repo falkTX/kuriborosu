@@ -244,6 +244,7 @@ void kuriborosu_host_destroy(Kuriborosu* const kuri)
     kuri->plugin_descriptor->deactivate(kuri->plugin_handle);
     kuri->plugin_descriptor->cleanup(kuri->plugin_handle);
     carla_host_handle_free(kuri->carla_handle);
+    free(kuri);
 }
 
 bool kuriborosu_host_load_file(Kuriborosu* const kuri, const char* const filename)
