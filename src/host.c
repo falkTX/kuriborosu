@@ -337,6 +337,15 @@ bool kuriborosu_host_render_to_file(Kuriborosu* const kuri, const file_render_op
     float* outbuf[2] = { bufL, bufR };
 
     kuri->time.playing = true;
+    kuri->time.bbt.valid = true;
+    kuri->time.bbt.beatsPerBar    = 4;
+    kuri->time.bbt.beatType       = 4;
+    kuri->time.bbt.ticksPerBeat   = 1920;
+    kuri->time.bbt.beatsPerMinute = 120;
+
+    // start
+    kuri->time.bbt.bar  = 1;
+    kuri->time.bbt.beat = 1;
 
     for (uint32_t i = 0; i < options->frames; i += buffer_size)
     {
@@ -358,6 +367,24 @@ bool kuriborosu_host_render_to_file(Kuriborosu* const kuri, const file_render_op
             kuri->plugin_needs_idle = false;
             kuri->plugin_descriptor->dispatcher(kuri->plugin_handle, NATIVE_PLUGIN_OPCODE_IDLE, 0, 0, NULL, 0.0f);
         }
+
+        // move BBT forwards
+        double newtick = kuri->time.bbt.tick
+             + (buffer_size * kuri->time.bbt.ticksPerBeat * kuri->time.bbt.beatsPerMinute / (sample_rate * 60));
+
+        while (newtick >= kuri->time.bbt.ticksPerBeat)
+        {
+            newtick -= kuri->time.bbt.ticksPerBeat;
+
+            if (++kuri->time.bbt.beat > kuri->time.bbt.beatsPerBar)
+            {
+                ++kuri->time.bbt.bar;
+                kuri->time.bbt.beat = 1;
+                kuri->time.bbt.barStartTick += kuri->time.bbt.beatsPerBar * kuri->time.bbt.ticksPerBeat;
+            }
+        }
+
+        kuri->time.bbt.tick = newtick;
     }
 
     if (options->tail_mode == tail_mode_continue_until_silence)
