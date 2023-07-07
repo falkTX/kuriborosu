@@ -281,12 +281,29 @@ bool kuriborosu_host_load_file(Kuriborosu* const kuri, const char* const filenam
     return false;
 }
 
+bool kuriborosu_host_set_plugin_custom_data(Kuriborosu* kuri, const char* type, const char* key, const char* value)
+{
+    CARLA_SAFE_ASSERT_RETURN(kuri != NULL, false);
+    CARLA_SAFE_ASSERT_RETURN(type != NULL, false);
+    CARLA_SAFE_ASSERT_RETURN(key != NULL, false);
+    CARLA_SAFE_ASSERT_RETURN(value != NULL, false);
+
+    const uint32_t plugin_count = carla_get_current_plugin_count(kuri->carla_handle);
+    CARLA_SAFE_ASSERT_RETURN(plugin_count != 0, false);
+
+    const uint32_t plugin_id = plugin_count - 1;
+
+    carla_set_custom_data(kuri->carla_handle, plugin_id, type, key, value);
+    printf("set custom data '%s'\n", value);
+    return true;
+}
+
 bool kuriborosu_host_load_plugin(Kuriborosu* kuri, const char* filenameOrUID)
 {
     CARLA_SAFE_ASSERT_RETURN(kuri != NULL, false);
     CARLA_SAFE_ASSERT_RETURN(filenameOrUID != NULL, false);
 
-    if (carla_add_plugin(kuri->carla_handle, BINARY_NATIVE, PLUGIN_LV2, "", "", filenameOrUID, 0, NULL, 0x0))
+    if (carla_add_plugin(kuri->carla_handle, BINARY_NATIVE, PLUGIN_LV2, "", "", filenameOrUID, 0, NULL, PLUGIN_OPTIONS_NULL))
         return true;
 
     fprintf(stderr, "Failed to load plugin %s, error was: %s\n",

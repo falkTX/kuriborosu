@@ -1,6 +1,6 @@
 /*
  * kuriborosu
- * Copyright (C) 2021 Filipe Coelho <falktx@falktx.com>
+ * Copyright (C) 2021-2023 Filipe Coelho <falktx@falktx.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
@@ -25,13 +25,13 @@
 int main(int argc, char* argv[])
 {
     // TODO use more advanced opts
-    uint32_t opts_buffer_size = 1024;
+    uint32_t opts_buffer_size = 256;
     uint32_t opts_sample_rate = 48000;
 
     if (argc >= 2 && strcmp(argv[1], "--version") == 0)
     {
         printf("kuriborosu v0.0.0, using Carla v" CARLA_VERSION_STRING "\n"
-               "Copyright 2021 Filipe Coelho <falktx@falktx.com>\n"
+               "Copyright 2021-2023 Filipe Coelho <falktx@falktx.com>\n"
                "License: ???\n"
                "This is free software: you are free to change and redistribute it.\n"
                "There is NO WARRANTY, to the extent permitted by law.\n");
@@ -62,10 +62,12 @@ int main(int argc, char* argv[])
     const bool isfile = strchr(infile, '.') != NULL || strchr(infile, '/') != NULL;
     if (isfile)
     {
+        printf("loading file '%s'...\n", infile);
         if (! kuriborosu_host_load_file(kuri, infile))
             goto error;
 
         file_frames = (uint32_t)(get_file_length_from_last_plugin(kuri) * opts_sample_rate + 0.5);
+        printf("file has %u frames, %g seconds\n", file_frames, (double)file_frames/opts_sample_rate);
     }
     else
     {
@@ -89,12 +91,34 @@ int main(int argc, char* argv[])
     for (int i = 3; i < argc; ++i)
     {
         const char* const plugin_arg = argv[i];
+        printf("%d %s\n", i, plugin_arg);
 
         // check if file
         if (plugin_arg[0] == '.' || plugin_arg[0] == '/')
+        {
             kuriborosu_host_load_file(kuri, plugin_arg);
+        }
+        // check if argument
+        else if (plugin_arg[0] == '-')
+        {
+            switch (plugin_arg[1])
+            {
+            case 'p':
+                // TODO complete me
+                if (++i < argc)
+                {
+                    kuriborosu_host_set_plugin_custom_data(kuri, CUSTOM_DATA_TYPE_PATH, "file", argv[i]);
+                }
+                break;
+            default:
+                // TODO give error
+                break;
+            }
+        }
         else
+        {
             kuriborosu_host_load_plugin(kuri, plugin_arg);
+        }
     }
 
     const file_render_options_t options = {

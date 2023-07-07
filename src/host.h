@@ -41,6 +41,7 @@ void kuriborosu_host_destroy(Kuriborosu* kuri);
 
 bool kuriborosu_host_load_file(Kuriborosu* kuri, const char* filename);
 bool kuriborosu_host_load_plugin(Kuriborosu* kuri, const char* filenameOrUID);
+bool kuriborosu_host_set_plugin_custom_data(Kuriborosu* kuri, const char* type, const char* key, const char* value);
 bool kuriborosu_host_render_to_file(Kuriborosu* kuri, const file_render_options_t* options);
 
 double get_file_length_from_last_plugin(Kuriborosu* kuri);
