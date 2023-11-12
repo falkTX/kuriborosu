@@ -96,6 +96,7 @@ int main(int argc, char* argv[])
         // check if file
         if (plugin_arg[0] == '.' || plugin_arg[0] == '/')
         {
+            printf("loading file as plugin '%s'...\n", plugin_arg);
             kuriborosu_host_load_file(kuri, plugin_arg);
         }
         // check if argument
@@ -107,6 +108,7 @@ int main(int argc, char* argv[])
                 // TODO complete me
                 if (++i < argc)
                 {
+                    printf("loading plugin-specific file '%s'...\n", argv[i]);
                     kuriborosu_host_set_plugin_custom_data(kuri, CUSTOM_DATA_TYPE_PATH, "file", argv[i]);
                 }
                 break;
@@ -117,6 +119,7 @@ int main(int argc, char* argv[])
         }
         else
         {
+            printf("loading plugin '%s'...\n", plugin_arg);
             kuriborosu_host_load_plugin(kuri, plugin_arg);
         }
     }
