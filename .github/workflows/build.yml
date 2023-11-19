@@ -26,8 +26,8 @@ jobs:
       - name: install dependencies
         shell: bash
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -yqq autoconf automake build-essential curl cmake git libasound2-dev libdbus-1-dev libgl1-mesa-dev libglib2.0-dev libx11-dev libxcursor-dev libxext-dev libxrandr-dev
+          apt-get update -qq
+          apt-get install -yqq autoconf automake build-essential curl cmake git libasound2-dev libdbus-1-dev libgl1-mesa-dev libglib2.0-dev libx11-dev libxcursor-dev libxext-dev libxrandr-dev
       - uses: actions/checkout@v3
         with:
           submodules: recursive
@@ -81,7 +81,7 @@ jobs:
         target: [win32, win64]
     runs-on: ubuntu-latest
     container:
-      image: ubuntu:23.10
+      image: debian:12
     steps:
       - uses: actions/cache@v3
         with:
@@ -91,14 +91,14 @@ jobs:
       - name: install dependencies
         shell: bash
         run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update -qq
+          dpkg --add-architecture i386
+          apt-get update -qq
           if [ '${{ matrix.target }}' == 'win32' ]; then
-            sudo apt-get install -yqq binutils-mingw-w64-i686 g++-mingw-w64-i686 
+            apt-get install -yqq binutils-mingw-w64-i686 g++-mingw-w64-i686 
           else
-            sudo apt-get install -yqq binutils-mingw-w64-x86-64 g++-mingw-w64-x86-64
+            apt-get install -yqq binutils-mingw-w64-x86-64 g++-mingw-w64-x86-64
           fi
-          sudo apt-get install -yqq autoconf automake curl cmake git mingw-w64 wine-stable
+          apt-get install -yqq autoconf automake curl cmake git mingw-w64 wine-stable
       - uses: actions/checkout@v3
         with:
           submodules: recursive
