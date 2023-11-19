@@ -17,7 +17,7 @@ jobs:
         target: [linux-x86_64]
     runs-on: ubuntu-latest
     container:
-      image: debian:10
+      image: ubuntu:20.04
     steps:
       - uses: actions/cache@v3
         with:
@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           apt-get update -qq
-          apt-get install -yqq autoconf automake build-essential curl cmake git libasound2-dev libdbus-1-dev libgl1-mesa-dev libglib2.0-dev libx11-dev libxcursor-dev libxext-dev libxrandr-dev
+          apt-get install -yqq autoconf automake build-essential curl cmake git libasound2-dev libdbus-1-dev libgl1-mesa-dev libglib2.0-dev libx11-dev libxcursor-dev libxext-dev libxrandr-dev xz-utils
       - uses: actions/checkout@v3
         with:
           submodules: recursive
@@ -99,7 +99,7 @@ jobs:
           else
             apt-get install -yqq binutils-mingw-w64-x86-64 g++-mingw-w64-x86-64
           fi
-          apt-get install -yqq autoconf automake curl cmake git mingw-w64 wine wine32
+          apt-get install -yqq autoconf automake curl cmake git mingw-w64 wine wine32 xz-utils
       - uses: actions/checkout@v3
         with:
           submodules: recursive
