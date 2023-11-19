@@ -44,6 +44,10 @@ jobs:
           source PawPaw/local.env ${{ matrix.target }}
           ${CMAKE} -S . -B build
           cmake --build build -j
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.target }}
+          path: build/bin
 
   macos:
     strategy:
@@ -75,6 +79,10 @@ jobs:
           source PawPaw/local.env ${{ matrix.target }}
           ${CMAKE} -S . -B build
           cmake --build build -j
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.target }}
+          path: build/bin
 
   windows:
     strategy:
@@ -115,3 +123,7 @@ jobs:
           source PawPaw/local.env ${{ matrix.target }}
           ${CMAKE} -S . -B build
           cmake --build build -j
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.target }}
+          path: build/bin
