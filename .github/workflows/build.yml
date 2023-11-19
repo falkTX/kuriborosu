@@ -3,20 +3,46 @@ name: build
 on:
   push:
 
+env:
+  CACHE_VERSION: 1
+  PAWPAW_SKIP_LTO: 1
+  PAWPAW_SKIP_SAMPLERATE: 1
+  PAWPAW_VERSION: 7105dc52abffd5aa5f1ab65f27396f59ba945ea3
+
 jobs:
   linux:
     strategy:
       matrix:
-        target: [linux-arm64, linux-armhf, linux-i686, linux-riscv64, linux-x86_64]
-    runs-on: ubuntu-20.04
+        target: [linux-x86_64]
+    runs-on: ubuntu-latest
+    container:
+      image: debian:10
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - uses: distrho/dpf-cmake-action@v1
+      - uses: actions/cache@v3
         with:
-          target: ${{ matrix.target }}
-          pawpaw: true
+          path: |
+            ~/PawPawBuilds
+          key: ${{ matrix.target }}-v${{ env.CACHE_VERSION }}
+      - name: bootstrap
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -yqq autoconf automake build-essential curl cmake git libasound2-dev libdbus-1-dev libgl1-mesa-dev libglib2.0-dev libx11-dev libxcursor-dev libxext-dev libxrandr-dev
+      - name: bootstrap
+        shell: bash
+        run: |
+          git clone https://github.com/DISTRHO/PawPaw.git
+          git -C PawPaw checkout ${{ env.PAWPAW_VERSION }}
+          ./PawPaw/bootstrap-common.sh ${{ matrix.target }} && ./PawPaw/.cleanup.sh ${{ matrix.target }}
+      - name: build
+        shell: bash
+        run: |
+          source PawPaw/local.env ${{ matrix.target }}
+          cmake -S . -B build
+          $(which cmake) --build build
 
   macos:
     strategy:
@@ -27,26 +53,63 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: fake dpf script
-        run: |
-          mkdir -p dpf/utils
-          ln -s $(which ls) dpf/utils/package-osx-bundles.sh
-          touch carla-macOS.pkg
-      - uses: distrho/dpf-cmake-action@v1
+      - uses: actions/cache@v3
         with:
-          target: ${{ matrix.target }}
-          pawpaw: true
+          path: |
+            ~/PawPawBuilds
+          key: ${{ matrix.target }}-v${{ env.CACHE_VERSION }}
+      - name: install dependencies
+        shell: bash
+        run: |
+          brew install cmake git jq meson
+      - name: bootstrap
+        shell: bash
+        run: |
+          git clone https://github.com/DISTRHO/PawPaw.git
+          git -C PawPaw checkout ${{ env.PAWPAW_VERSION }}
+          ./PawPaw/bootstrap-common.sh ${{ matrix.target }} && ./PawPaw/.cleanup.sh ${{ matrix.target }}
+      - name: build
+        shell: bash
+        run: |
+          source PawPaw/local.env ${{ matrix.target }}
+          cmake -S . -B build
+          $(which cmake) --build build
 
   windows:
     strategy:
       matrix:
         target: [win32, win64]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
+    container:
+      image: debian:12
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - uses: distrho/dpf-cmake-action@v1
+      - uses: actions/cache@v3
         with:
-          target: ${{ matrix.target }}
-          pawpaw: true
+          path: |
+            ~/PawPawBuilds
+          key: ${{ matrix.target }}-v${{ env.CACHE_VERSION }}
+      - name: install dependencies
+        shell: bash
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update -qq
+          if [ '${{ matrix.target }}' == 'win32' ]; then
+            sudo apt-get install -yqq binutils-mingw-w64-i686 g++-mingw-w64-i686 mingw-w64 wine-stable
+          else
+            sudo apt-get install -yqq binutils-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64 wine-stable
+          fi
+      - name: bootstrap
+        shell: bash
+        run: |
+          git clone https://github.com/DISTRHO/PawPaw.git
+          git -C PawPaw checkout ${{ env.PAWPAW_VERSION }}
+          ./PawPaw/bootstrap-common.sh ${{ matrix.target }} && ./PawPaw/.cleanup.sh ${{ matrix.target }}
+      - name: build
+        shell: bash
+        run: |
+          source PawPaw/local.env ${{ matrix.target }}
+          cmake -S . -B build
+          $(which cmake) --build build
