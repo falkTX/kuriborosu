@@ -7,7 +7,8 @@ env:
   DEBIAN_FRONTEND: noninteractive
   PAWPAW_SKIP_LTO: 1
   PAWPAW_SKIP_SAMPLERATE: 1
-  PAWPAW_VERSION: 7105dc52abffd5aa5f1ab65f27396f59ba945ea3
+  PAWPAW_SKIP_TESTS: 1
+  PAWPAW_VERSION: 90236be774b3d2d615f489815b7cafbe576feaf6
 
 jobs:
   linux:
@@ -94,11 +95,11 @@ jobs:
           dpkg --add-architecture i386
           apt-get update -qq
           if [ '${{ matrix.target }}' == 'win32' ]; then
-            apt-get install -yqq binutils-mingw-w64-i686 g++-mingw-w64-i686 
+            apt-get install -yqq binutils-mingw-w64-i686 g++-mingw-w64-i686
           else
             apt-get install -yqq binutils-mingw-w64-x86-64 g++-mingw-w64-x86-64
           fi
-          apt-get install -yqq autoconf automake curl cmake git mingw-w64 wine-stable
+          apt-get install -yqq autoconf automake curl cmake git mingw-w64 wine wine32
       - uses: actions/checkout@v3
         with:
           submodules: recursive
