@@ -24,6 +24,7 @@ pkg_check_modules(SNDFILE IMPORTED_TARGET REQUIRED sndfile)
 # Import carla stuff
 
 set(CARLA_BUILD_STATIC TRUE)
+mark_as_advanced(CARLA_BUILD_STATIC)
 
 add_subdirectory(src/carla/cmake)
 
