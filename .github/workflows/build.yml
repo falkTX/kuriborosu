@@ -42,7 +42,7 @@ jobs:
         shell: bash
         run: |
           source PawPaw/local.env ${{ matrix.target }}
-          ${CMAKE} -S . -B build
+          ${CMAKE} -S . -B build -DCARLA_BUILD_STATIC:BOOL=TRUE
           cmake --build build -j
       - uses: actions/upload-artifact@v3
         with:
@@ -77,7 +77,7 @@ jobs:
         shell: bash
         run: |
           source PawPaw/local.env ${{ matrix.target }}
-          ${CMAKE} -S . -B build
+          ${CMAKE} -S . -B build -DCARLA_BUILD_STATIC:BOOL=TRUE
           cmake --build build -j
       - uses: actions/upload-artifact@v3
         with:
@@ -121,7 +121,7 @@ jobs:
         shell: bash
         run: |
           source PawPaw/local.env ${{ matrix.target }}
-          ${CMAKE} -S . -B build
+          ${CMAKE} -S . -B build -DCARLA_BUILD_STATIC:BOOL=TRUE
           cmake --build build -j
       - uses: actions/upload-artifact@v3
         with:
